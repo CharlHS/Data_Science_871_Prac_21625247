@@ -1,0 +1,113 @@
+---
+title: "Question 2: London"
+documentclass: elsarticle
+Thesis_FP: no
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+    template: Tex/TexDefault.txt
+    fig_width: 3.5
+    fig_height: 3.5
+Author1: Jane Doe
+Ref1: Some Institution, Cape Town, South Africa
+Email1: nfkatzke\@gmail.com
+Author2: John Smith
+Ref2: Some other Institution, Cape Town, South Africa
+Email2: John\@gmail.com
+CommonAffiliation_12: yes
+Author3: John Doe
+Email3: Joe\@gmail.com
+CorrespAuthor_1: yes
+keywords: Multivariate GARCH \sep Kalman Filter \sep Copula
+JELCodes: L250 \sep L100
+BottomRFooter: \footnotesize Page \thepage
+addtoprule: yes
+addfootrule: yes
+margin: 2.3
+bottom: 2
+top: 2.5
+HardSet_layout: yes
+linenumbers: no
+bibliography: Tex/ref.bib
+csl: "Tex/harvard-stellenbosch-university.csl"
+RemovePreprintSubmittedTo: yes
+Journal: Journal of Finance
+toc: no
+numbersections: yes
+fontsize: 11pt
+linestretch: 1.2
+link-citations: yes
+AddTitle: yes
+abstract: null
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+
+if(!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
+pacman::p_load(huxtable)
+
+london_df = read.csv("D:/User folders/Documents/Practical/21625247/data/London/london_weather.csv")
+as_tibble(london_df)
+det_df = read.csv("D:/User folders/Documents/Practical/21625247/data/London/UKMonthly_Detailed.csv")
+
+```
+
+<!-- ############################## -->
+
+<!-- # Start Writing here: -->
+
+<!-- ############################## -->
+
+# Introduction \label{Introduction}
+Dear friend, I know you want to move to England, but please reconsider. I collected some data and made graphs to convince you, and show you that the weather in England can get quite unpleasant.
+
+# An average day across seasons:
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_2/code")
+london_df = london_df %>% mutate(date = lubridate::ymd(date))
+london_df$month<- format(as.Date(london_df$date, format="%Y-%m-%d"),"%B")
+#london_sea = london_df %>% mutate(month =format(months.Date(date)))
+london_sea = season(london_df)
+print(london_sea)
+
+ht =hux(
+        Season = london_sea$season,
+        Sunshine = london_sea$sunshine,
+        "Average Maximum Temperature" = london_sea$max_temp,
+        "Average Mean Temperature" = london_sea$mean_temp,
+        "Average Minimum Temperature" = london_sea$min_temp,
+        "Average Daily Precipitation" = london_sea$precipitation,
+        add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+   number_format(ht)      <- 2
+
+      ht
+```
+Compared to South Africa, average temperatures remain fairly cool. Even in summer, the average maximum temperature is just 22 degrees, and winters are almost always very cold with very little sunlight.
+
+# The chances of rain across the year:
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_2/code")
+london_rain = rain(london_df)
+avg_rain = mean(london_rain$rain,na.rm=T)
+w =london_plot(london_rain,london_rain$rain,"","Probability of Rain", "Probability of at least 1 mm of rain falling")
+print(w)
+```
+As you can see, most days of the year there is a fair chance of having at least 1 mm of rain, so you are likely to encounter a lot of rain in England.
+
+
+
+

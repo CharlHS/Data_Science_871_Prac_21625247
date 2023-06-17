@@ -1,0 +1,431 @@
+---
+output:
+  md_document:
+    variant: markdown_github
+---
+
+Charl Schoeman - 21625247
+
+Data Science Practical Test
+
+17 June 2023
+
+```{r}
+# Clean environment
+rm(list = ls())
+gc()
+```
+
+```{r}
+# Load Relevant packages
+library(tidyverse)
+library(pacman)
+library(fmxdat)
+pacman::p_load(Texevier)
+pacman::p_load(huxtable)
+pacman::p_load(ggplot)
+pacman::p_load(lubridate)
+pacman::p_load(stringi)
+pacman::p_load(forcats)
+list.files('code/', full.names = T, recursive = T) %>% .[grepl('.R', .)] %>% as.list() %>% walk(~source(.))
+```
+
+
+Question 1: Covid-19
+
+Common misconceptions: (Do these 3, add 1 of own after inspecting data)
+
+1. African countries' experience vs others (look at total deaths per million)
+
+2. Patterns for countries with specific concentrated groupings (life expectancy, )
+
+3. Increases in hospitalization facilities (lagging with ICU admissions or leading?)
+
+Own:
+
+4. Which country reached the highest total vaccination rate per continent, and when?
+
+Create rmd for Question 1:
+```{r}
+#Texevier::create_template(directory = "D:/User folders/Documents/Practical/21625247",template_name = "Question_1", build_project = F, open_project = F)
+```
+
+Import the data:
+```{r}
+covid_df <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/owid-covid-data.csv")
+descr <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/covid_data_description.csv")
+deaths <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/Deaths_by_cause.csv")
+```
+
+First, create a list of countries to simplify things:
+```{r}
+countries = unique(covid_df$location)
+print(countries)
+```
+
+1. African countries' experience vs others: This is estimated by plotting the new cases per million using the comp_plot function:
+```{r}
+# First a sieve function was written to only select a specific set of countries for comparison (in code for Question 1)
+# Then a general function is written to compare line plots for different regions/countries/attributes of the data..
+# graph plot of total cases and deaths per million for continents
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+regions = c("Africa","Asia","Europe","Oceania","North America","South America","World")
+reg_dat = sieve(covid_df, regions)
+a = comp_plot(reg_dat, reg_dat$total_cases_per_million, "", "Total Cases per Million People", "Comparison of total cases per million people for different regions")
+print(a)
+# Do the same but for total deaths
+b = comp_plot(reg_dat, reg_dat$total_deaths_per_million, "", "Total Deaths per Million People", "Comparison of total deaths per million people for different regions")
+print(b)
+```
+This is then repeated for specific countries to see the difference between countries within regions:
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+countr = c("South Africa","Nigeria","Kenya","Ethiopia","China","United States","Germany", "United Kingdom")
+ctr_dat = sieve(covid_df, countr)
+c = comp_plot(ctr_dat, ctr_dat$total_cases_per_million, "", "Total Cases per Million People", "Comparison of total cases per million people for different regions")
+print(c)
+```
+```{r Figure4,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+d = comp_plot(ctr_dat, ctr_dat$total_deaths_per_million, "", "Total Deaths per Million People", "Comparison of total deaths per million people for different regions")
+print(d)
+```
+
+2. Patterns of countries with specific concentrated groupings.
+
+A few are considered: 
+
+Countries with older populations (above the 75th percentile for the proportion of individuals over 65):
+```{r}
+#calculate the 75th percentile:
+age_perc = quantile(covid_df$aged_65_older,0.75,na.rm=T)
+print(age_perc)
+
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+age_df = split(covid_df,covid_df$aged_65_older,14.312)
+e = comp_plot(age_df,age_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with older population vs those with younger populations")
+print(e)
+```
+
+Countries with more diabetics:
+```{r}
+#75th percentile:
+dia_perc = quantile(covid_df$diabetes_prevalence,0.75,na.rm=T)
+print(dia_perc)
+
+dia_df = split(covid_df, covid_df$diabetes_prevalence, 10.59)
+f = comp_plot(dia_df,dia_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with higher vs lower prevalence of diabetes")
+print(f)
+```
+Countries with higher poverty rates:
+```{r}
+#percentile
+pov_perc = quantile(covid_df$extreme_poverty,0.75,na.rm=T)
+print(pov_perc)
+
+pov_df = split(covid_df, covid_df$extreme_poverty, 21.2)
+g = comp_plot(pov_df,pov_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with higher vs lower poverty rates")
+print(g)
+```
+
+Highest Eventual Vaccination rate:
+```{r}
+# Calculate each country's vaccination rate 
+vax_df = covid_df %>% mutate(vax_rate = people_fully_vaccinated/population)
+# Last time period:
+end = max(vax_df$date)
+print(end)
+# 2022-06-15
+# Only look at final time period:
+vax_df = vax_df %>% filter(date == "2022-06-15")
+#Top 5
+Top_5 = head(sort(vax_df$vax_rate, decreasing = T),n=5)
+print(Top_5)
+# Get rid of the other countries
+vax_df_rest = vax_df %>% filter(vax_rate %in% Top_5)
+# Match the values using a table
+tab = table(vax_df_rest$vax_rate, ctrs)
+print(tab)
+vax_perc = vax_df_rest$vax_rate*100
+print(vax_perc)
+ctrs = c("Chile","Macao","South Korea","Malaysia","Uruguay")
+ht =hux(
+    Country = ctrs,
+    Percentage = vax_perc,
+    add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+ht
+```
+
+
+
+
+
+Question 2: London
+```{r}
+# Import data
+london_df = read.csv("D:/User folders/Documents/Practical/21625247/data/London/london_weather.csv")
+det_df = read.csv("D:/User folders/Documents/Practical/21625247/data/London/UKMonthly_Detailed.csv")
+```
+Mean Winter & Summer Temperatures
+```{r}
+# isolate winters
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_2/code")
+london_sea = season(london_df)
+# Table to illustrate an average day.
+ht =hux(
+        Season = london_sea$season,
+        Clouds = london_sea$cloud_cover,
+        Sunshine = london_sea$sunshine,
+        "Average Maximum Temperature" = london_sea$max_temp,
+        "Average Mean Temperature" = london_sea$mean_temp,
+        "Average Minimum Temperature" = london_sea$min_temp,
+        "Average Daily Precipitation" = london_sea$precipitation,
+        add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+    ht
+```
+
+Chance of Rain:
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_2/code")
+london_rain = rain(london_df)
+avg_rain = mean(london_rain$rain,na.rm=T)
+w =london_plot(london_rain,london_rain$rain,"","Probability of Rain", "Probability of at least 1 mm of rain falling")
+print(w)
+```
+
+
+
+
+
+Question 3:
+Start by weeding out the live albums/rereleases!
+```{r}
+# get rid of the extra albums
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+c_list = c("Parachutes", "A Rush of Blood to the Head", "X&Y","Viva la Vida or Death and All His Friends","Mylo Xyloto","A Head Full of Dreams", "Everyday Life","Music of the Spheres")
+work_c = parachute(coldplay,c_list)
+work_c = work_c %>% mutate(album = album_name)
+
+# now metallica
+m_list = c("Kill 'Em All","Ride the Lightning","Master of Puppets","...And Justice for All","Metallica","Load","Reload","St. Anger","Death Magnetic","Hardwired... to Self-Destruct", "72 Seasons")
+work_m = sandman(metallica,m_list)
+```
+Now we look at how they developed over time:
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+#   popularity
+#   average out the albums to see how they develop over time
+test_c = average(work_c)
+test_m = average(work_m)
+```
+First we look at popularity. It is interesting how the two bands in opposite directions, with Coldplay being most populr during Metallica's least popular period.
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$popularity,"Time","Popularity","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$popularity,"Time","Popularity","Metallica","red")
+print(b)
+```
+Next, we look at acousticness:
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$acousticness,"Time","Acousticness","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$acousticness,"Time","acousticness","Metallica","red")
+print(b)
+```
+Again, it moves in opposite directions!
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure3}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$loudness,"Time","Loudness","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$loudness,"Time","Loudness","Metallica","red")
+print(b)
+
+```
+
+
+
+
+
+Question 4:
+Import it!
+```{r}
+    credits = read.csv("D:/User folders/Documents/Practical/21625247/data/netflix/credits.csv")
+    titles = read.csv("D:/User folders/Documents/Practical/21625247/data/netflix/titles.csv")
+    merged = full_join(credits, titles, by = "id")
+```
+Segment the movies into tiers by popularity (IMDB votes) and quality (IMDB scores)
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+# assess the quality
+good_movie = assess(movies$imdb_score)
+print(good_movie)
+# assess the popularity
+popular_movie = assess(movies$imdb_votes)
+print(popular_movie)
+```
+Now sort it:
+```{r}
+#add empty slots for quartiles
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+quarts = empty(movies)
+# sort for movie quality
+quarts = sorting(quarts,quarts$imdb_score,good_movie,quarts$imdb_votes,popular_movie)
+```
+
+```{r}
+# Get rid of the fluff
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+tidy_q = tidy_CH(quarts)
+illus = table(tidy_q$good_q, tidy_q$pop_q)
+illus_df = as.data.frame.matrix(illus)
+```
+
+Make a table of the best and most popular old films for a back catalogue
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+# Only look at the best and most popular older films:
+oldies = old_gold(tidy_q,2000)
+
+#Table it
+ht =hux(
+        Title = oldies$title,
+        "Quality Quartile" = oldies$good_q,
+        "Popularity Quartile" = oldies$pop_q,
+        "Release Year" = oldies$release_year,
+        "Genre" = oldies$genres,
+        add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+    ht
+```
+Now we want to see what genres are now popular
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+# First we only want newer movies, released after 2017 with a popularity tier 4:
+newies = new_pop(tidy_q, 2018,4)
+genres = newies$genres
+#Now we count the amount of movies of each genre
+action = genre_count(genres, 'action')
+romance = genre_count(genres, 'romance')
+thriller = genre_count(genres, 'thriller')
+comedy = genre_count(genres, 'comedy')
+horror = genre_count(genres, 'horror')
+drama = genre_count(genres, 'drama')
+crime = genre_count(genres, 'crime')
+scifi = genre_count(genres, 'scifi')
+fantasy = genre_count(genres, 'fantasy')
+european = genre_count(genres, 'european')
+music = genre_count(genres, 'music')
+genre_df = data.frame(genre = c('action','romance','thriller','comedy','horror','drama','crime','scifi','fantasy','european','music'),count = c(action, romance, thriller, comedy,horror,drama,crime,scifi,fantasy,european,music))
+```
+
+
+```{r}
+barp = barplot(genre_df$count,
+               main = "Most popular genres",
+               xlab = "Genres",
+               ylab = "Count",
+               names = genre_df$genre,
+               col = "blue")
+```
+From here, we are assessing the popularity of shows with different age categories, using the same methods we used for movies for the first table.
+```{r}
+    fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+good_show = assess(tv$imdb_score)
+
+popular_show = assess(tv$imdb_votes)
+quart_show = empty(tv)
+# sort for tv show quality
+quart_show = sorting(quart_show,quart_show$imdb_score,good_show,quart_show$imdb_votes,popular_show)
+```
+
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+tidy_show = tidy_CH(quart_show)
+```
+
+```{r}
+plot_show = tidy_show %>% arrange(age_certification) %>%group_by(release_year)%>%reframe(avg = mean(imdb_votes, na.rm=T),release_year,age_certification)
+```
+Now it is time to plot the shows.
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure3}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+s = plot2(plot_show)
+print(s)
+```
+
+
+
+
+Question 5:
+This part will have two parts:
+
+1. An overview of the success, in terms of downloads, of different app categories.
+
+2. An overview of the effect of app size on downloads, and if it could be negative.
+```{r}
+# first we have to sort out the download numbers
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+play_df = play_df %>% mutate(Installs = gsub('[+]','',Installs)) %>%mutate(Installs = gsub(',','',Installs)) %>%mutate(Installs = strtoi(Installs))
+# Solve size as well
+play_df = play_df %>% mutate(Size = gsub('[M]','',Size)) %>%mutate(Size = gsub('[Varies with device]','',Size)) %>%mutate(Size = strtoi(Size))
+```
+
+```{r}
+# Calculate average downloads and reviews for categories, and make the dataframe smaller and easier to work with.
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+play_adv = play_df %>% group_by(Genres)%>%reframe(avg_Installs = mean(Installs, na.rm=T),avg_rating = mean(Rating, na.rm=T))
+
+```
+We now create a table that illustrates the popularity of communication apps.
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+f = figure(play_adv)
+print(f)
+```
+We now look if app size has any effect on download numbers:
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+dl_sizes = assess(play_adv$Size)
+print(dl_sizes)
+#play_adv = empty(play_adv)
+play_adv = sorting(play_adv,play_adv$Size,dl_sizes)
+play_2 = play_adv %>% group_by(size_bracket)%>%reframe(avg_Installs=mean(avg_Installs))
+```
+
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+barp = barplot(play_2$avg_Installs,
+               main = "App ",
+               xlab = "Size bracket",
+               ylab = "Count",
+               names = play_2$size_bracket,
+               col = "green")
+```

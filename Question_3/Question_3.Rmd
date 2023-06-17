@@ -1,0 +1,123 @@
+---
+title: "Question 3"
+documentclass: elsarticle
+Thesis_FP: no
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+    template: Tex/TexDefault.txt
+    fig_width: 3.5
+    fig_height: 3.5
+Author1: Jane Doe
+Ref1: Some Institution, Cape Town, South Africa
+Email1: nfkatzke\@gmail.com
+Author2: John Smith
+Ref2: Some other Institution, Cape Town, South Africa
+Email2: John\@gmail.com
+CommonAffiliation_12: yes
+Author3: John Doe
+Email3: Joe\@gmail.com
+CorrespAuthor_1: yes
+keywords: Multivariate GARCH \sep Kalman Filter \sep Copula
+JELCodes: L250 \sep L100
+BottomRFooter: \footnotesize Page \thepage
+addtoprule: yes
+addfootrule: yes
+margin: 2.3
+bottom: 2
+top: 2.5
+HardSet_layout: yes
+linenumbers: no
+bibliography: Tex/ref.bib
+csl: "Tex/harvard-stellenbosch-university.csl"
+RemovePreprintSubmittedTo: yes
+Journal: Journal of Finance
+toc: no
+numbersections: yes
+fontsize: 11pt
+linestretch: 1.2
+link-citations: yes
+AddTitle: yes
+abstract: null
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+# Note: Include = FALSE implies the code is executed, but not printed in your pdf.
+# warning and message = FALSE implies ugly messages and warnings are removed from your pdf.
+# These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
+
+# Lets load in example data, and see how this can be stored and later called from your 'data' folder.
+if(!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
+coldplay = read_csv("D:/User folders/Documents/Practical/21625247/data/Coldplay_vs_Metallica/Coldplay.csv")
+metallica = read_csv("D:/User folders/Documents/Practical/21625247/data/Coldplay_vs_Metallica/metallica.csv")
+```
+
+
+<!-- ############################## -->
+<!-- # Start Writing here: -->
+<!-- ############################## -->
+
+# Analysis
+```{r}
+#   get rid of the extra albums
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+c_list = c("Parachutes", "A Rush of Blood to the Head", "X&Y","Viva la Vida or Death and All His Friends","Mylo Xyloto","A Head Full of Dreams", "Everyday Life","Music of the Spheres")
+work_c = parachute(coldplay,c_list)
+work_c = work_c %>% mutate(album = album_name)
+
+#   now metallica
+m_list = c("Kill 'Em All","Ride the Lightning","Master of Puppets","...And Justice for All","Metallica","Load","Reload","St. Anger","Death Magnetic","Hardwired... to Self-Destruct", "72 Seasons")
+work_m = sandman(metallica,m_list)
+```
+
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+#   popularity
+#   average out the albums and work with it like that
+test_c = average(work_c)
+test_m = average(work_m)
+```
+First we look at popularity. It is interesting how the two bands in opposite directions, with Coldplay being most populr during Metallica's least popular period.
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$popularity,"Time","Popularity","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$popularity,"Time","Popularity","Metallica","red")
+print(b)
+```
+Next, we look at acousticness:
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$acousticness,"Time","Acousticness","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$acousticness,"Time","acousticness","Metallica","red")
+print(b)
+```
+Again, it moves in opposite directions!
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure3}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# plot it a bit
+merge = full_join(test_c,test_m,by = "release_date")
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_3/code")
+a = comp_plot(test_c,test_c$loudness,"Time","Loudness","Coldplay","blue")
+print(a)
+b = comp_plot(test_m,test_m$loudness,"Time","Loudness","Metallica","red")
+print(b)
+```
+As one would expect, Metallica is a lot louder than Coldplay.
+
+# Discussion
+These graphs show something interesting about the progression and change over time of these band. While they both can fairly be called two of the biggest bands in the world, they both had their ups and downs. Interestingly, comparing Coldplay's graph for acousticness and popularity shows an interesting, counterintuitive trend. While they originally became known for acoustic music (as heard on the album Parachutes), returning to that sound recently did not help their popularity, and they are actually at their least popular at a time where their music most closely resembles their original sound.
+
+Metallica, on the other hand, constantly changes their sound. This is interesting, because when they went acoustic, that was actually their lowest point of popularity. As they became steadily more loud, they became more popular as well. This suggests that the music-listening public has some implicit expectations of what they expect from bands, and when their sound changes in a way the fans don't like they can easily lose public support.

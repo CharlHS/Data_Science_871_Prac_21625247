@@ -1,0 +1,127 @@
+---
+title: "Question 5"
+documentclass: elsarticle
+Thesis_FP: no
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+    template: Tex/TexDefault.txt
+    fig_width: 3.5
+    fig_height: 3.5
+Author1: Jane Doe
+Ref1: Some Institution, Cape Town, South Africa
+Email1: nfkatzke\@gmail.com
+Author2: John Smith
+Ref2: Some other Institution, Cape Town, South Africa
+Email2: John\@gmail.com
+CommonAffiliation_12: yes
+Author3: John Doe
+Email3: Joe\@gmail.com
+CorrespAuthor_1: yes
+BottomRFooter: \footnotesize Page \thepage
+addtoprule: yes
+addfootrule: yes
+margin: 2.3
+bottom: 2
+top: 2.5
+HardSet_layout: yes
+linenumbers: no
+bibliography: Tex/ref.bib
+csl: "Tex/harvard-stellenbosch-university.csl"
+RemovePreprintSubmittedTo: yes
+Journal: Journal of Finance
+toc: no
+numbersections: yes
+fontsize: 11pt
+linestretch: 1.2
+link-citations: yes
+AddTitle: yes
+abstract: null
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+
+if(!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
+pacman::p_load(huxtable)
+#Import data
+play_df = read_csv("D:/User folders/Documents/Practical/21625247/data/googleplay/googleplaystore.csv")
+reviews_df = read_csv("D:/User folders/Documents/Practical/21625247/data/googleplay/googleplaystore_user_reviews.csv")
+
+
+```
+
+
+<!-- ############################## -->
+<!-- # Start Writing here: -->
+<!-- ############################## -->
+
+# Introduction \label{Introduction}
+
+This report will have two parts:
+1. An overview of the success, in terms of downloads, of different app categories over time.
+2. An overview of the effect of app size on downloads, and if it could be negative.
+
+# Success of different app categories:
+```{r}
+# first we have to sort out the download numbers
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+play_df = play_df %>% mutate(Installs = gsub('[+]','',Installs)) %>%mutate(Installs = gsub(',','',Installs)) %>%mutate(Installs = strtoi(Installs))
+# Solve size as well
+play_df = play_df %>% mutate(Size = gsub('[M]','',Size)) %>%mutate(Size = gsub('[Varies with device]','',Size)) %>%mutate(Size = strtoi(Size))
+```
+
+```{r}
+# Calculate average downloads and reviews for categories
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+play_adv = play_df %>% group_by(Genres)%>%reframe(avg_Installs = mean(Installs, na.rm=T),avg_rating = mean(Rating, na.rm=T))
+play_adv = unique(play_adv)
+
+```
+Here we have a table that illustrates how successful different genre of apps are:
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+ht  =hux(
+        Genres = play_adv$Genres,
+        "Average amount of Installs" = play_adv$avg_Installs,
+        "Average rating" = play_adv$avg_rating,
+        add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+ht
+```
+As wel can see from this table, communications are the most successful apps, and the apps with the best reviews are Comic and Board game apps.
+
+# Does app size affect popularity?
+```{r}
+play_adv = play_df %>% group_by(Genres)%>%reframe(avg_Installs = mean(Installs, na.rm=T),avg_rating = mean(Rating, na.rm=T), Size)
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_5/code")
+dl_sizes = assess(play_adv$Size)
+print(dl_sizes)
+#play_adv = empty(play_adv)
+play_adv = sorting(play_adv,play_adv$Size,dl_sizes)
+play_2 = play_adv %>% group_by(size_bracket)%>%reframe(avg_Installs=mean(avg_Installs))
+```
+
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+barp = barplot(play_2$avg_Installs,
+               main = "App ",
+               xlab = "Size bracket",
+               ylab = "Count",
+               names = play_2$size_bracket,
+               col = "green")
+```
+From the figure we can see that the download size of an app does not have a notable effect on its download numbers.

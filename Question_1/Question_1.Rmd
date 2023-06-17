@@ -1,0 +1,160 @@
+---
+title: 'Question 1: Covid-19 Insights'
+documentclass: elsarticle
+Thesis_FP: no
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+    template: Tex/TexDefault.txt
+    fig_width: 3.5
+    fig_height: 3.5
+Author1: Jane Doe
+Ref1: Some Institution, Cape Town, South Africa
+Email1: nfkatzke\@gmail.com
+Author2: John Smith
+Ref2: Some other Institution, Cape Town, South Africa
+Email2: John\@gmail.com
+CommonAffiliation_12: yes
+Author3: John Doe
+Email3: Joe\@gmail.com
+CorrespAuthor_1: yes
+keywords: Multivariate GARCH \sep Kalman Filter \sep Copula
+JELCodes: L250 \sep L100
+BottomRFooter: \footnotesize Page \thepage
+addtoprule: yes
+addfootrule: yes
+margin: 2.3
+bottom: 2
+top: 2.5
+HardSet_layout: yes
+linenumbers: no
+bibliography: Tex/ref.bib
+csl: "Tex/harvard-stellenbosch-university.csl"
+RemovePreprintSubmittedTo: yes
+Journal: Journal of Finance
+toc: no
+numbersections: yes
+fontsize: 11pt
+linestretch: 1.2
+link-citations: yes
+AddTitle: yes
+abstract: |
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+
+if(!require("tidyverse")) install.packages("tidyverse")
+pacman::p_load(huxtable)
+covid_df <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/owid-covid-data.csv")
+descr <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/covid_data_description.csv")
+deaths <- read_csv("D:/User folders/Documents/Practical/21625247/data/Covid/Deaths_by_cause.csv")
+
+```
+
+<!-- ############################## -->
+
+<!-- # Start Writing here: -->
+
+<!-- ############################## -->
+
+# Background \label{-}
+
+Data from Our World in Data is used to illustrate some interesting and important insights about the Covid-19 pandemic.
+
+# How does the experience of the African continent compare to other continents? \label{-}
+To compare the aggregate experience for different continents, it is useful to compare both the total amount of cases per million people in the region, as well as the total amount of deaths.\ 
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+# graph plot of total cases and deaths per million for continents
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+regions = c("Africa","Asia","Europe","Oceania","North America","South America","World")
+reg_dat = sieve(covid_df, regions)
+a = comp_plot(reg_dat, reg_dat$total_cases_per_million, "", "Total Cases per Million People", "Comparison of total cases per million people for different regions")
+print(a)
+```
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+b = comp_plot(reg_dat, reg_dat$total_deaths_per_million, "", "Total Deaths per Million People", "Comparison of total deaths per million people for different regions")
+print(b)
+```
+\ From the plotted line graphs, we see that, when measured by cases and Covid-related deaths, Africa did better than other regions on an aggregate level. It is obviously important to remember that there could be large differences between countries on the continents. If we choose to compare a select few African countries to international countries, we will find the following:
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure3}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+countr = c("South Africa","Nigeria","Kenya","Ethiopia","China","United States","Germany", "United Kingdom")
+ctr_dat = sieve(covid_df, countr)
+c = comp_plot(ctr_dat, ctr_dat$total_cases_per_million, "", "Total Cases per Million People", "Comparison of total cases per million people for different regions")
+print(c)
+```
+```{r Figure4,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure4}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+d = comp_plot(ctr_dat, ctr_dat$total_deaths_per_million, "", "Total Deaths per Million People", "Comparison of total deaths per million people for different regions")
+print(d)
+```
+These graphs show an interesting finding, that some African countries had a lot less Covid-19 cases and deaths per million people than some prominent developed countries, like Ethiopia, Kenya and Nigeria, while others (like South Africa) had similar numbers to a developed country like Germany.
+
+# Patterns for countries with specific concentrating groups \label{-}
+Now we look at a variety of concentrating groups, which includes:
+Countries that have an older population (above the 75th percentile with regard to the proportion of the population that is over 65).
+```{r Figure5,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure5}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+age_df = split(covid_df,covid_df$aged_65_older,14.312)
+e = comp_plot(age_df,age_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with older population vs those with younger populations")
+print(e)
+```
+Countries with a higher prevalence of diabetes:
+```{r Figure6,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure6}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+dia_df = split(covid_df, covid_df$diabetes_prevalence, 10.59)
+f = comp_plot(dia_df,dia_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with higher vs lower prevalence of diabetes")
+print(f)
+```
+Countries with higher poverty rates:
+```{r Figure7,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure7}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_1/code")
+pov_df = split(covid_df, covid_df$extreme_poverty, 21.2)
+g = comp_plot(pov_df,pov_df$total_deaths_per_million,"", "Total Deaths per Million", "Deaths per million for countries with higher vs lower poverty rates")
+print(g)
+```
+The first two features (old age and being diabetic) are both associated with a higher risk of dying of Covid-19. However, in a global sense, it seems that having an older population had a larger effect on deaths than younger populations, while having high prevalence of diabetes did not have as strong an effect. Surprisingly the death rate is lower for countries with higher poverty rates. These unexpected results could be due to the fact that mean values are being used.
+
+
+# Eventual Vaccination Rate
+Lastly we look at countries' eventual vaccination rates, and investigate which country has the highest vaccination rate in the world (as of June 2022 when the data ends.)
+```{r}
+# Calculate each country's vaccination rate 
+vax_df = covid_df %>% mutate(vax_rate = people_fully_vaccinated/population)
+# Last time period:
+end = max(vax_df$date)
+print(end)
+# 2022-06-15
+# Only look at final time period:
+vax_df = vax_df %>% filter(date == "2022-06-15")
+#Top 5
+Top_5 = head(sort(vax_df$vax_rate, decreasing = T),n=5)
+print(Top_5)
+# Get rid of the other countries
+vax_df_rest = vax_df %>% filter(vax_rate %in% Top_5)
+ctrs = c("Chile","Macao","South Korea","Malaysia","Uruguay")
+# Match the values using a table
+tab = table(vax_df_rest$vax_rate, ctrs)
+print(tab)
+vax_perc = vax_df_rest$vax_rate*100
+print(vax_perc)
+
+```
+```{r Figure8,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure8}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+ht =hux(
+    Country = ctrs,
+    Percentage = vax_perc,
+    add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+ht
+```
+We can see that Chile has the highest vaccination rate in the world, with 91.38% of the population being fully vaccinated.

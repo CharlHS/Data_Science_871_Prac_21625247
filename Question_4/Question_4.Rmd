@@ -1,0 +1,182 @@
+---
+title: "Question 4"
+documentclass: elsarticle
+Thesis_FP: no
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+    template: Tex/TexDefault.txt
+    fig_width: 3.5
+    fig_height: 3.5
+Author1: Jane Doe
+Ref1: Some Institution, Cape Town, South Africa
+Email1: nfkatzke\@gmail.com
+Author2: John Smith
+Ref2: Some other Institution, Cape Town, South Africa
+Email2: John\@gmail.com
+CommonAffiliation_12: yes
+Author3: John Doe
+Email3: Joe\@gmail.com
+CorrespAuthor_1: yes
+keywords: Multivariate GARCH \sep Kalman Filter \sep Copula
+JELCodes: L250 \sep L100
+BottomRFooter: \footnotesize Page \thepage
+addtoprule: yes
+addfootrule: yes
+margin: 2.3
+bottom: 2
+top: 2.5
+HardSet_layout: yes
+linenumbers: no
+bibliography: Tex/ref.bib
+csl: "Tex/harvard-stellenbosch-university.csl"
+RemovePreprintSubmittedTo: yes
+Journal: Journal of Finance
+toc: no
+numbersections: yes
+fontsize: 11pt
+linestretch: 1.2
+link-citations: yes
+AddTitle: yes
+abstract: null
+---
+
+<!-- First: Set your default preferences for chunk options: -->
+
+<!-- If you want a chunk's code to be printed, set echo = TRUE. message = FALSE stops R printing ugly package loading details in your final paper too. I also suggest setting warning = FALSE and checking for warnings in R, else you might find ugly warnings in your paper. -->
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.width = 6, fig.height = 5, fig.pos="H", fig.pos = 'H')
+# Note: Include = FALSE implies the code is executed, but not printed in your pdf.
+# warning and message = FALSE implies ugly messages and warnings are removed from your pdf.
+# These should be picked up when you execute the command chunks (code sections below) in your rmd, not printed in your paper!
+
+# Lets load in example data, and see how this can be stored and later called from your 'data' folder.
+if(!require("tidyverse")) install.packages("tidyverse")
+library(tidyverse)
+pacman::p_load(huxtable)
+pacman::p_load(forcats)
+credits = read.csv("D:/User folders/Documents/Practical/21625247/data/netflix/credits.csv")
+titles = read.csv("D:/User folders/Documents/Practical/21625247/data/netflix/titles.csv")
+merged = full_join(credits, titles, by = "id")
+movies = merged %>% filter(type == "MOVIE")
+tv = merged %>% filter(type == "SHOW")
+```
+
+
+<!-- ############################## -->
+<!-- # Start Writing here: -->
+<!-- ############################## -->
+
+# Brief discussion
+
+It is hard to quantify quality and profitability from internet rankings, but it does give us an indication of what is popular. To enter the streaming market, audience scores are extremely important.
+
+# Analytics
+
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+good_movie = assess(movies$imdb_score)
+
+popular_movie = assess(movies$imdb_votes)
+
+```
+
+```{r}
+#add empty slots for quartiles
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+quarts = empty(movies)
+# sort for movie quality
+quarts = sorting(quarts,quarts$imdb_score,good_movie,quarts$imdb_votes,popular_movie)
+```
+
+
+```{r}
+# Get rid of the fluff
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+tidy_q = tidy_CH(quarts)
+illus = table(tidy_q$good_q, tidy_q$pop_q)
+illus_df = as.data.frame.matrix(illus)
+```
+
+Movies and tv shows can be split into four quartiles along popularity (represented by the amount of IMDB votes) and quality (the IMDB score). Ideally, a streaming service would want films that are at least in the top quartile for one metric and in the top two quartiles for the other.
+Older movies and shows are usually cheap to acquire. Combining this with the tier system of the ratings can help management choose films or tv shows that have a higher probability of being successful.
+```{r Figure1,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure1}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+# Only look at the best and most popular older films:
+oldies = old_gold(tidy_q,2000)
+
+#Table it
+ht =hux(
+        Title = oldies$title,
+        "Quality Quartile" = oldies$good_q,
+        "Popularity Quartile" = oldies$pop_q,
+        "Release Year" = oldies$release_year,
+        "Genre" = oldies$genres,
+        add_colnames = TRUE)
+    bold(ht)[1,]           <- TRUE
+    bottom_border(ht)[1,]  <- 0.4
+    align(ht)[,2]          <- "right"
+    right_padding(ht)      <- 10
+    left_padding(ht)       <- 10
+    width(ht)              <- 0.35
+    number_format(ht)      <- 2
+
+    ht
+```
+Thus a list has been compiled of possible films that can be good contenders to be acquired as a back catalogue for starting up a streaming service.
+Obviously newer films and tv shows are also required. To avoid overspending, it is useful to consider what genres are currently popular and would be a good addition to a hypothetical streaming service.
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+# First we only want newer movies, released after 2017, with a popularity tier of level 4:
+newies = new_pop(tidy_q, 2018,4)
+genres = newies$genres
+action = genre_count(genres, 'action')
+romance = genre_count(genres, 'romance')
+thriller = genre_count(genres, 'thriller')
+comedy = genre_count(genres, 'comedy')
+horror = genre_count(genres, 'horror')
+drama = genre_count(genres, 'drama')
+crime = genre_count(genres, 'crime')
+scifi = genre_count(genres, 'scifi')
+fantasy = genre_count(genres, 'fantasy')
+european = genre_count(genres, 'european')
+music = genre_count(genres, 'music')
+genre_df = data.frame(genre = c('action','romance','thriller','comedy','horror','drama','crime','scifi','fantasy','european','music'),count = c(action, romance, thriller, comedy,horror,drama,crime,scifi,fantasy,european,music))
+
+```
+Based on this graph, drama movies are the most popular and the company should invest in new drama movies for the streaming platform.
+```{r Figure2,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure2}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+a = barp(genre_df,genre_df$genre,genre_df$count)
+print(a)
+
+```
+
+And lastly, it is worth considering the popularity of different age ratings of tv shows over time, as it is important to consider when shows are decided on.
+```{r}
+    fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+good_show = assess(tv$imdb_score)
+
+popular_show = assess(tv$imdb_votes)
+quart_show = empty(tv)
+# sort for tv show quality
+quart_show = sorting(quart_show,quart_show$imdb_score,good_show,quart_show$imdb_votes,popular_show)
+```
+
+```{r}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+tidy_show = tidy_CH(quart_show)
+```
+
+```{r}
+plot_show = tidy_show %>% arrange(age_certification) %>%group_by(release_year)%>%reframe(avg = mean(imdb_votes, na.rm=T),release_year,age_certification)
+```
+
+```{r Figure3,  warning =  FALSE, fig.align = 'center', fig.cap = "\\label{Figure3}", fig.ext = 'png', fig.height = 5, fig.width = 7}
+fmxdat::source_all("D:/User folders/Documents/Practical/21625247/Question_4/code")
+s = plot2(plot_show)
+print(s)
+```
+Based on this figure, there seems to be some nostalgia for shows from 10 years ago, as all of the graphs peak at that point. This is something that can be utilised in a streaming service. There does not, however, seem to be a specific ge category that is vastly more popular.
